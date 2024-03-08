@@ -9,10 +9,10 @@ use self::wrapper::{Wrapper, WrapperError};
 use super::util::setup_logger;
 use crate::prelude::Plugin;
 
-mod backend;
-mod config;
+pub mod backend;
+pub mod config;
 mod context;
-mod wrapper;
+pub mod wrapper;
 
 /// Open an NIH-plug plugin as a standalone application. If the plugin has an editor, this will open
 /// the editor and block until the editor is closed. Otherwise this will block until SIGINT is
