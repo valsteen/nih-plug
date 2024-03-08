@@ -1317,7 +1317,8 @@ impl<P: ClapPlugin> Wrapper<P> {
                 midi_event @ (NoteEvent::MidiChannelPressure { .. }
                 | NoteEvent::MidiPitchBend { .. }
                 | NoteEvent::MidiCC { .. }
-                | NoteEvent::MidiProgramChange { .. })
+                | NoteEvent::MidiProgramChange { .. }
+                | NoteEvent::UnsupportedMidi { .. })
                     if P::MIDI_OUTPUT >= MidiConfig::MidiCCs =>
                 {
                     // NIH-plug already includes MIDI conversion functions, so we'll reuse those for

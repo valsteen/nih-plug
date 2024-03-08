@@ -51,7 +51,6 @@ pub enum MidiConfig {
 /// All of the timings are sample offsets within the current buffer. Out of bound timings are
 /// clamped to the current buffer's length. All sample, channel and note numbers are zero-indexed.
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[non_exhaustive]
 pub enum NoteEvent<S> {
     /// A note on event, available on [`MidiConfig::Basic`] and up.
     NoteOn {
@@ -325,6 +324,10 @@ pub enum NoteEvent<S> {
     /// plugin doesn't support this kind of message), then this will be logged during debug builds
     /// of the plugin, and no event is emitted.
     MidiSysEx { timing: u32, message: S },
+    UnsupportedMidi {
+        timing: u32,
+        values: [u8; 3],
+    },
 }
 
 /// The result of converting a `NoteEvent<S>` to MIDI. This is a bit weirder than it would have to
@@ -361,6 +364,7 @@ impl<S> NoteEvent<S> {
             NoteEvent::MidiCC { timing, .. } => *timing,
             NoteEvent::MidiProgramChange { timing, .. } => *timing,
             NoteEvent::MidiSysEx { timing, .. } => *timing,
+            NoteEvent::UnsupportedMidi { timing, .. } => *timing,
         }
     }
 
@@ -385,6 +389,7 @@ impl<S> NoteEvent<S> {
             NoteEvent::MidiCC { .. } => None,
             NoteEvent::MidiProgramChange { .. } => None,
             NoteEvent::MidiSysEx { .. } => None,
+            NoteEvent::UnsupportedMidi { .. } => None,
         }
     }
 
@@ -409,6 +414,7 @@ impl<S> NoteEvent<S> {
             NoteEvent::MidiCC { channel, .. } => Some(*channel),
             NoteEvent::MidiProgramChange { channel, .. } => Some(*channel),
             NoteEvent::MidiSysEx { .. } => None,
+            NoteEvent::UnsupportedMidi { .. } => None,
         }
     }
 }
@@ -494,7 +500,14 @@ impl<S: SysExMessage> NoteEvent<S> {
                         program: midi_data[1],
                     });
                 }
-                _ => (),
+                _ => {
+                    let mut values: [u8; 3] = [0; 3];
+                    for (i, &item) in midi_data.iter().enumerate().take(3) {
+                        values[i] = item;
+                    }
+
+                    return Ok(NoteEvent::UnsupportedMidi { timing, values })
+                }
             }
         }
 
@@ -618,6 +631,7 @@ impl<S: SysExMessage> NoteEvent<S> {
             | NoteEvent::PolyVibrato { .. }
             | NoteEvent::PolyExpression { .. }
             | NoteEvent::PolyBrightness { .. } => None,
+            NoteEvent::UnsupportedMidi { values, .. } => Some(MidiResult::Basic(values)),
         }
     }
 
@@ -644,6 +658,7 @@ impl<S: SysExMessage> NoteEvent<S> {
             NoteEvent::MidiCC { timing, .. } => *timing -= samples,
             NoteEvent::MidiProgramChange { timing, .. } => *timing -= samples,
             NoteEvent::MidiSysEx { timing, .. } => *timing -= samples,
+            NoteEvent::UnsupportedMidi { timing, .. } => *timing -= samples,
         }
     }
 }
