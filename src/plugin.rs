@@ -15,7 +15,7 @@ pub mod vst3;
 /// A function that can execute a plugin's [`BackgroundTask`][Plugin::BackgroundTask]s. A plugin can
 /// dispatch these tasks from the `initialize()` function, the `process()` function, or the GUI, so
 /// they can be deferred for later to avoid blocking realtime contexts.
-pub type TaskExecutor<P> = Box<dyn Fn(<P as Plugin>::BackgroundTask) + Send>;
+pub type TaskExecutor<P> = Box<dyn FnMut(<P as Plugin>::BackgroundTask) + Send>;
 
 /// The main plugin trait covering functionality common across most plugin formats. Most formats
 /// also have another trait with more specific data and functionality that needs to be implemented
