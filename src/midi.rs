@@ -324,6 +324,10 @@ pub enum NoteEvent<S> {
     /// plugin doesn't support this kind of message), then this will be logged during debug builds
     /// of the plugin, and no event is emitted.
     MidiSysEx { timing: u32, message: S },
+
+    /// Bitwig won't transmit sysex in and out of plugins, however will happily route status bytes
+    /// that are < 0x80 between plugins. We can use that to transmit data or transport more than
+    /// 16 channels, provided that another plugin interprets it or converts it back.
     UnsupportedMidi {
         timing: u32,
         values: [u8; 3],
