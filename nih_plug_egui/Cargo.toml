@@ -11,16 +11,16 @@ description = "An adapter to use egui GUIs with NIH-plug"
 default = ["opengl", "default_fonts"]
 # `nih_plug_egui` always uses OpenGL since egui's wgpu backend is still unstable
 # depending on the platform
-opengl = ["egui-baseview/opengl"]
+opengl = ["baseview/opengl", "egui-baseview/opengl"]
 default_fonts = ["egui-baseview/default_fonts"]
 rayon = ["egui-baseview/rayon"]
 
 [dependencies]
 nih_plug = { path = "..", default-features = false }
 raw-window-handle = "0.5"
-baseview = { git = "https://github.com/RustAudio/baseview.git", rev = "3724a00c970a9cd10a3494fa3c37bca66d631bb7" }
+baseview = { git = "https://github.com/RustAudio/baseview.git", version = "0.1.4" }
 crossbeam = "0.8"
-egui-baseview = { git = "https://github.com/BillyDM/egui-baseview.git", rev = "b6bcb51312bf9b2b710753475f7efb4cfe39ddef" }
+egui-baseview = { git = "https://github.com/valsteen/egui-baseview.git", branch = "nih-plug-baseview-0.1.4" }
 parking_lot = "0.12"
 # To make the state persistable
 serde = { version = "1.0", features = ["derive"] }
