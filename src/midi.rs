@@ -51,7 +51,6 @@ pub enum MidiConfig {
 /// All of the timings are sample offsets within the current buffer. Out of bound timings are
 /// clamped to the current buffer's length. All sample, channel and note numbers are zero-indexed.
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[non_exhaustive]
 pub enum NoteEvent<S> {
     /// A note on event, available on [`MidiConfig::Basic`] and up.
     NoteOn {
@@ -325,6 +324,12 @@ pub enum NoteEvent<S> {
     /// plugin doesn't support this kind of message), then this will be logged during debug builds
     /// of the plugin, and no event is emitted.
     MidiSysEx { timing: u32, message: S },
+    /// A short MIDI payload that NIH-plug does not model as a first-class event.
+    ///
+    /// This is a raw escape hatch for host/controller integrations that intentionally pass compact
+    /// MIDI-shaped messages through the plugin graph. Real SysEx messages starting with `0xf0`
+    /// still use [`NoteEvent::MidiSysEx`].
+    UnsupportedMidi { timing: u32, values: [u8; 3] },
 }
 
 /// The result of converting a `NoteEvent<S>` to MIDI. This is a bit weirder than it would have to
@@ -361,6 +366,7 @@ impl<S> NoteEvent<S> {
             NoteEvent::MidiCC { timing, .. } => *timing,
             NoteEvent::MidiProgramChange { timing, .. } => *timing,
             NoteEvent::MidiSysEx { timing, .. } => *timing,
+            NoteEvent::UnsupportedMidi { timing, .. } => *timing,
         }
     }
 
@@ -385,6 +391,7 @@ impl<S> NoteEvent<S> {
             NoteEvent::MidiCC { .. } => None,
             NoteEvent::MidiProgramChange { .. } => None,
             NoteEvent::MidiSysEx { .. } => None,
+            NoteEvent::UnsupportedMidi { .. } => None,
         }
     }
 
@@ -409,6 +416,7 @@ impl<S> NoteEvent<S> {
             NoteEvent::MidiCC { channel, .. } => Some(*channel),
             NoteEvent::MidiProgramChange { channel, .. } => Some(*channel),
             NoteEvent::MidiSysEx { .. } => None,
+            NoteEvent::UnsupportedMidi { .. } => None,
         }
     }
 }
@@ -501,6 +509,14 @@ impl<S: SysExMessage> NoteEvent<S> {
                 }
                 _ => (),
             }
+        }
+        if midi_data.len() >= 3 && status_byte != 0xf0 {
+            let mut values = [0; 3];
+            for (i, &item) in midi_data.iter().enumerate().take(3) {
+                values[i] = item;
+            }
+
+            return Ok(NoteEvent::UnsupportedMidi { timing, values });
         }
 
         // Every other message is parsed as SysEx, even if they don't have the `0xf0` status byte.
@@ -623,6 +639,7 @@ impl<S: SysExMessage> NoteEvent<S> {
             | NoteEvent::PolyVibrato { .. }
             | NoteEvent::PolyExpression { .. }
             | NoteEvent::PolyBrightness { .. } => None,
+            NoteEvent::UnsupportedMidi { values, .. } => Some(MidiResult::Basic(values)),
         }
     }
 
@@ -649,6 +666,7 @@ impl<S: SysExMessage> NoteEvent<S> {
             NoteEvent::MidiCC { timing, .. } => *timing -= samples,
             NoteEvent::MidiProgramChange { timing, .. } => *timing -= samples,
             NoteEvent::MidiSysEx { timing, .. } => *timing -= samples,
+            NoteEvent::UnsupportedMidi { timing, .. } => *timing -= samples,
         }
     }
 }
@@ -752,6 +770,25 @@ mod tests {
         };
 
         assert_eq!(roundtrip_basic_event(event), event);
+    }
+
+    #[test]
+    fn test_unsupported_midi_conversion() {
+        let midi_data = [0xf1, 0x02, 0x03];
+        let parsed = NoteEvent::<()>::from_midi(TIMING, &midi_data).unwrap();
+
+        assert_eq!(
+            parsed,
+            NoteEvent::UnsupportedMidi {
+                timing: TIMING,
+                values: midi_data,
+            }
+        );
+
+        match parsed.as_midi() {
+            Some(MidiResult::Basic(values)) => assert_eq!(values, midi_data),
+            result => panic!("Unexpected result: {result:?}"),
+        }
     }
 
     mod sysex {
