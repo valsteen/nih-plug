@@ -20,7 +20,7 @@ nih_plug = { path = "..", default-features = false }
 raw-window-handle = "0.5"
 baseview = { git = "https://github.com/RustAudio/baseview.git", version = "0.1.4" }
 crossbeam = "0.8"
-egui-baseview = { git = "https://github.com/valsteen/egui-baseview.git", branch = "nih-plug-baseview-0.1.4" }
+egui-baseview = { git = "https://github.com/valsteen/egui-baseview.git", branch = "egui-0.34-nih-plug-baseview" }
 parking_lot = "0.12"
 # To make the state persistable
 serde = { version = "1.0", features = ["derive"] }

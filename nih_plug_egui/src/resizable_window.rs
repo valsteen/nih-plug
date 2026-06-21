@@ -34,7 +34,13 @@ impl ResizableWindow {
         egui_state: &EguiState,
         add_contents: impl FnOnce(&mut Ui) -> R,
     ) -> InnerResponse<R> {
-        CentralPanel::default().show(context, move |ui| {
+        let mut root_ui = Ui::new(
+            context.clone(),
+            Id::new((context.viewport_id(), "resizable_window_root")),
+            UiBuilder::new().max_rect(context.content_rect()),
+        );
+
+        CentralPanel::default().show_inside(&mut root_ui, move |ui| {
             let ui_rect = ui.clip_rect();
             let mut content_ui =
                 ui.new_child(UiBuilder::new().max_rect(ui_rect).layout(*ui.layout()));
