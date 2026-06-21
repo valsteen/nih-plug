@@ -315,6 +315,7 @@ pub enum OutputParamEvent {
 /// Because CLAP has this [`clap_host::request_host_callback()`] function, we don't need to use
 /// `OsEventLoop` and can instead just request a main thread callback directly.
 impl<P: ClapPlugin> EventLoop<Task<P>, Wrapper<P>> for Wrapper<P> {
+    #[cfg(any(feature = "vst3", feature = "standalone"))]
     fn new_and_spawn(_executor: Weak<Self>) -> Self {
         panic!("What are you doing");
     }

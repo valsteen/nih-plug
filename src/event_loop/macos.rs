@@ -7,7 +7,7 @@ use core_foundation::runloop::{
     CFRunLoopSourceSignal, CFRunLoopWakeUp,
 };
 use crossbeam::channel::{self, Receiver, Sender};
-use objc::{class, msg_send, sel, sel_impl};
+use objc::runtime::{Class, Sel};
 use std::os::raw::c_void;
 use std::sync::Weak;
 
@@ -113,7 +113,13 @@ where
     }
 
     fn is_main_thread(&self) -> bool {
-        unsafe { msg_send![class!(NSThread), isMainThread] }
+        let ns_thread = Class::get("NSThread").expect("NSThread should exist on macOS");
+        let is_main_thread = Sel::register("isMainThread");
+
+        unsafe {
+            objc::__send_message(ns_thread, is_main_thread, ())
+                .expect("NSThread::isMainThread should be callable on macOS")
+        }
     }
 }
 
