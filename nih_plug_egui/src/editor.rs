@@ -123,11 +123,10 @@ where
                     }
                 }
 
-                // For now, just always redraw. Most plugin GUIs have meters, and those almost always
-                // need a redraw. Later we can try to be a bit more sophisticated about this. Without
-                // this we would also have a blank GUI when it gets first opened because most DAWs open
-                // their GUI while the window is still unmapped.
-                egui_ctx.request_repaint();
+                // Do not request an unconditional repaint here. This keeps plugin editors rendering
+                // while visually idle, which showed up as avoidable standby CPU use in this project.
+                // Editors with continuously changing state should request repaint from their update
+                // path instead.
                 (update)(egui_ctx, &setter, &mut state.write());
             },
         );
