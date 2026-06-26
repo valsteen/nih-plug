@@ -1,26 +1,32 @@
 //! An internal event loop for spooling tasks to the/a GUI thread.
 
+#[cfg(any(feature = "vst3", feature = "standalone"))]
 use std::sync::Weak;
 
 mod background_thread;
 
-#[cfg(all(target_family = "unix", not(target_os = "macos")))]
+#[cfg(all(
+    any(feature = "vst3", feature = "standalone"),
+    target_family = "unix",
+    not(target_os = "macos")
+))]
 mod linux;
-#[cfg(target_os = "macos")]
+#[cfg(all(any(feature = "vst3", feature = "standalone"), target_os = "macos"))]
 mod macos;
-#[cfg(target_os = "windows")]
+#[cfg(all(any(feature = "vst3", feature = "standalone"), target_os = "windows"))]
 mod windows;
 
 pub(crate) use self::background_thread::BackgroundThread;
 
-#[cfg_attr(not(feature = "vst3"), allow(unused_imports))]
-#[cfg(all(target_family = "unix", not(target_os = "macos")))]
+#[cfg(all(
+    any(feature = "vst3", feature = "standalone"),
+    target_family = "unix",
+    not(target_os = "macos")
+))]
 pub(crate) use self::linux::LinuxEventLoop as OsEventLoop;
-#[cfg_attr(not(feature = "vst3"), allow(unused_imports))]
-#[cfg(target_os = "macos")]
+#[cfg(all(any(feature = "vst3", feature = "standalone"), target_os = "macos"))]
 pub(crate) use self::macos::MacOSEventLoop as OsEventLoop;
-#[cfg_attr(not(feature = "vst3"), allow(unused_imports))]
-#[cfg(target_os = "windows")]
+#[cfg(all(any(feature = "vst3", feature = "standalone"), target_os = "windows"))]
 pub(crate) use self::windows::WindowsEventLoop as OsEventLoop;
 
 // This needs to be pretty high to make sure parameter change events don't get dropped when there's
@@ -46,6 +52,7 @@ where
 {
     /// Create and start a new event loop. The thread this is called on will be designated as the
     /// main thread, so this should be called when constructing the wrapper.
+    #[cfg(any(feature = "vst3", feature = "standalone"))]
     fn new_and_spawn(executor: Weak<E>) -> Self;
 
     /// Either post the function to the task queue so it can be delegated to the main thread, or
